@@ -1,1 +1,1 @@
-# Platform Game 2D [Practice]
+# 2D Map Generation [Experiment]
