@@ -1,13 +1,17 @@
 import { CanvasScreen, Sprite } from "@jaymar921/2dgraphic-utils";
 import { Blocks } from "../materials/Blocks";
 import { Gradient } from "../materials/Gradient";
+import { Terrain } from "../materials/Terrain";
 
 export class MapGenerator {
-    constructor(width = 5, height = 5, blockSize = 16, seed = 'default-seed') {
+    constructor(width = 5, height = 5, blockSize = 16, seed = 'default-seed', smoothnessFactor = 1) {
         this.width = width;
         this.height = height;
         this.blockSize = blockSize;
         this.blocks = [];
+        this.chunks = [];
+        this.smoothnessFactor = smoothnessFactor;
+
 
         // Initialize seeded RNG using LCG algorithm
         this.seed = this.stringToSeed(seed);
@@ -68,39 +72,142 @@ export class MapGenerator {
         return smoothedValue * 2 - 1; // Map it to the range of -1 to 1
     }
 
-    generate() {
+    generateChunks(){
         const { width, height, blockSize } = this;
 
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
-                // Generate perlin noise with smoothstep
+                // Generate Perlin noise value, smoothed and scaled to [-1, 1]
                 const random = this.randomGenerator(x, y).toFixed(1);
-
+    
                 let image = null;
-
-                if(random <= - 0.8) image = Gradient[10];
-                else if(random <= - 0.6) image = Gradient[9];
-                else if(random <= - 0.4) image = Gradient[8];
-                else if(random <= - 0.2) image = Gradient[7];
-                else if(random <= 0) image = Gradient[6];
-                else if(random <= 0.2) image = Gradient[5];
-                else if(random <= 0.4) image = Gradient[4];
-                else if(random <= 0.6) image = Gradient[3];
-                else if(random <= 0.8) image = Gradient[2];
-                else image = Gradient[1];
-
-                const spr = new Sprite({
-                    objID: `block-${Blocks.Grass.id}:${x}-${y}`,
-                    name: Blocks.Grass.name,
-                    posX: x * blockSize,
-                    posY: y * blockSize,
-                    imageSource: image,
+                let biome = null;
+    
+                // Assign biomes and corresponding images based on the noise value
+                if (random <= -0.6) {
+                    biome = "Water";
+                    image = Terrain.ocean;
+                } else if (random <= -0.2) {
+                    biome = "Sea";
+                    image = Terrain.sea;
+                } else if (random <= 0.2) {
+                    biome = "Plains";
+                    image = Terrain.plains;
+                } else if (random <= 0.4) {
+                    biome = "Forest";
+                    image = Terrain.forrest;
+                } else {
+                    biome = "Mountain";
+                    image = Terrain.mountain;
+                }
+                
+                this.chunks.push({
+                    biome: biome,
+                    image: image,
+                    x: x,
+                    y: y,
+                    pN: random
                 });
-
-                this.blocks.push(spr);
             }
         }
     }
+
+    generate() {
+        this.generateChunks();
+    
+        // Iterate over each chunk
+        for (const chunk of this.chunks) {
+            const { biome, image, x, y, pN } = chunk;
+    
+            for (let localY = 0; localY < 16; localY++) {
+                for (let localX = 0; localX < 16; localX++) {
+                    const globalX = x * this.blockSize + localX;
+                    const globalY = y * this.blockSize + localY;
+    
+                    // Calculate the interpolated noise value
+                    const interpolatedPN = this.getInterpolatedValue(globalX, globalY, x, y);
+    
+                    // Determine the biome and corresponding image based on the interpolated noise value
+                    let blockBiome = null;
+                    let blockImage = null;
+    
+                    if (interpolatedPN <= -0.6) {
+                        blockBiome = "Water";
+                        blockImage = Terrain.ocean;
+                    } else if (interpolatedPN <= -0.2) {
+                        blockBiome = "Sea";
+                        blockImage = Terrain.sea;
+                    } else if (interpolatedPN <= 0) {
+                        blockBiome = "Beach";
+                        blockImage = Terrain.beach;
+                    } else if (interpolatedPN <= 0.3) {
+                        blockBiome = "Plains";
+                        blockImage = Terrain.plains;
+                    } else if (interpolatedPN <= 0.6) {
+                        blockBiome = "Forest";
+                        blockImage = Terrain.forrest;
+                    } else {
+                        blockBiome = "Mountain";
+                        blockImage = Terrain.mountain;
+                    }
+    
+                    // Create the sprite for the block
+                    const spr = new Sprite({
+                        objID: `block-${localX}-${localY}:${x}-${y}: I: ${interpolatedPN.toFixed(2)} | biome: ${biome}`,
+                        name: `biome: ${blockBiome}`,
+                        posX: globalX * this.blockSize,
+                        posY: globalY * this.blockSize,
+                        imageSource: blockImage,
+                    });
+    
+                    this.blocks.push(spr);
+                }
+            }
+        }
+    }
+    
+    /**
+     * Interpolates the noise value for a block based on neighboring chunks.
+     * @param {number} globalX - The global X-coordinate of the block.
+     * @param {number} globalY - The global Y-coordinate of the block.
+     * @param {number} chunkX - The X-coordinate of the current chunk.
+     * @param {number} chunkY - The Y-coordinate of the current chunk.
+     * @returns {number} Interpolated noise value.
+     */
+    getInterpolatedValue(globalX, globalY, chunkX, chunkY) {
+        const neighbors = [
+            { dx: 0, dy: 0 }, // Current chunk
+            { dx: -1, dy: 0 }, // Left
+            { dx: 1, dy: 0 },  // Right
+            { dx: 0, dy: -1 }, // Top
+            { dx: 0, dy: 1 },  // Bottom
+        ];
+
+        let totalWeight = 0;
+        let weightedSum = 0;
+
+        for (const { dx, dy } of neighbors) {
+            const neighborX = chunkX + dx;
+            const neighborY = chunkY + dy;
+
+            // Check if the neighbor chunk exists
+            const neighborChunk = this.chunks.find(c => c.x === neighborX && c.y === neighborY);
+            if (!neighborChunk) continue;
+
+            const distance = Math.sqrt(
+                Math.pow(globalX - (neighborChunk.x * this.blockSize + this.blockSize / 2), 2) +
+                Math.pow(globalY - (neighborChunk.y * this.blockSize + this.blockSize / 2), 2)
+            );
+
+            // Adjust weight using the smoothness factor
+            const weight = Math.pow(1 / (distance + 0.01), this.smoothnessFactor); // Smoothness affects weight
+            totalWeight += weight;
+            weightedSum += weight * neighborChunk.pN;
+        }
+
+        return weightedSum / totalWeight; // Weighted average
+    }
+    
 
     /**
      * 
