@@ -17,6 +17,27 @@ export function useCanvas(canvasId = "my-canvas", width, height, background = "b
     }, [canvasId, background])
 
     /**
+     * Returns the camera offset of the canvas screen
+     * @returns {{x: Number, y: Number}}
+     */
+    function getCameraOffset(){
+        return CanvasScreen.cameraOffset;
+    }
+
+    /**
+     * Set the x and y offset of the canvas screen camera
+     * @param {Number} x 
+     * @param {Number} y 
+     */
+    function setCameraOffset(x = 0, y = 0){
+        CanvasScreen.cameraOffset = {
+            x,
+            y
+        };
+    }
+
+
+    /**
      * Enable Camera Movement using mouse drag
      * @param {boolean} arg 
      */
@@ -77,6 +98,8 @@ export function useCanvas(canvasId = "my-canvas", width, height, background = "b
         handleScreenClickedEvent,
         enableScreenDrag,
         getRegisteredObject,
-        getAllRegisteredObjects
+        getAllRegisteredObjects,
+        getCameraOffset,
+        setCameraOffset
     };
 }
