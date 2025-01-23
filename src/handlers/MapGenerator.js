@@ -167,20 +167,24 @@ export class MapGenerator {
     }
     
     /**
-     * Interpolates the noise value for a block based on neighboring chunks.
-     * @param {number} globalX - The global X-coordinate of the block.
-     * @param {number} globalY - The global Y-coordinate of the block.
-     * @param {number} chunkX - The X-coordinate of the current chunk.
-     * @param {number} chunkY - The Y-coordinate of the current chunk.
-     * @returns {number} Interpolated noise value.
-     */
+ * Interpolates the noise value for a block based on neighboring chunks.
+ * @param {number} globalX - The global X-coordinate of the block.
+ * @param {number} globalY - The global Y-coordinate of the block.
+ * @param {number} chunkX - The X-coordinate of the current chunk.
+ * @param {number} chunkY - The Y-coordinate of the current chunk.
+ * @returns {number} Interpolated noise value.
+ */
     getInterpolatedValue(globalX, globalY, chunkX, chunkY) {
         const neighbors = [
-            { dx: 0, dy: 0 }, // Current chunk
-            { dx: -1, dy: 0 }, // Left
-            { dx: 1, dy: 0 },  // Right
-            { dx: 0, dy: -1 }, // Top
-            { dx: 0, dy: 1 },  // Bottom
+            { dx: 0, dy: 0 },   // Current chunk
+            { dx: -1, dy: 0 },  // Left
+            { dx: 1, dy: 0 },   // Right
+            { dx: 0, dy: -1 },  // Top
+            { dx: 0, dy: 1 },   // Bottom
+            { dx: -1, dy: -1 }, // Top-left
+            { dx: 1, dy: -1 },  // Top-right
+            { dx: -1, dy: 1 },  // Bottom-left
+            { dx: 1, dy: 1 },   // Bottom-right
         ];
 
         let totalWeight = 0;
@@ -194,19 +198,26 @@ export class MapGenerator {
             const neighborChunk = this.chunks.find(c => c.x === neighborX && c.y === neighborY);
             if (!neighborChunk) continue;
 
+            // Calculate the center of the neighbor chunk
+            const neighborCenterX = neighborChunk.x * this.blockSize + this.blockSize / 2;
+            const neighborCenterY = neighborChunk.y * this.blockSize + this.blockSize / 2;
+
+            // Calculate the distance from the global position to the neighbor chunk center
             const distance = Math.sqrt(
-                Math.pow(globalX - (neighborChunk.x * this.blockSize + this.blockSize / 2), 2) +
-                Math.pow(globalY - (neighborChunk.y * this.blockSize + this.blockSize / 2), 2)
+                Math.pow(globalX - neighborCenterX, 2) +
+                Math.pow(globalY - neighborCenterY, 2)
             );
 
-            // Adjust weight using the smoothness factor
-            const weight = Math.pow(1 / (distance + 0.01), this.smoothnessFactor); // Smoothness affects weight
+            // Use a Gaussian-like weight for smoother interpolation
+            const weight = Math.exp(-Math.pow(distance, 2) / (2 * Math.pow(this.smoothnessFactor, 2)));
             totalWeight += weight;
             weightedSum += weight * neighborChunk.pN;
         }
 
-        return weightedSum / totalWeight; // Weighted average
+        // Avoid division by zero
+        return totalWeight > 0 ? weightedSum / totalWeight : 0;
     }
+
     
 
     /**
