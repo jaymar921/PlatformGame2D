@@ -3,11 +3,15 @@ import { Blocks } from "../materials/Blocks";
 import { Gradient } from "../materials/Gradient";
 
 export class MapGenerator {
-    constructor(width = 5, height = 5, blockSize = 16) {
+    constructor(width = 5, height = 5, blockSize = 16, seed = 'default-seed') {
         this.width = width;
         this.height = height;
         this.blockSize = blockSize;
         this.blocks = [];
+
+        // Initialize seeded RNG using LCG algorithm
+        this.seed = this.stringToSeed(seed);
+        this.rng = this.createLCGRNG(this.seed);
 
         this.perlinNoise = this.createPerlinNoise(width, height);
     }
@@ -16,17 +20,40 @@ export class MapGenerator {
         return this.width * this.height;
     }
 
-    // Simple Perlin Noise generator using a 2D grid
+    // Convert a string seed into a numerical seed
+    stringToSeed(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = (hash << 5) - hash + str.charCodeAt(i);
+        }
+        return hash;
+    }
+
+    // Create a seeded Linear Congruential Generator (LCG)
+    createLCGRNG(seed) {
+        const a = 1664525; // Multiplier
+        const c = 1013904223; // Increment
+        const m = 4294967296; // Modulus (2^32)
+
+        let state = (seed ^ a) % m;
+
+        return () => {
+            state = (a * state + c) % m;
+            return state / m; // Normalize to [0, 1]
+        };
+    }
+
+    // Simple Perlin Noise generator using a 2D grid with seeded RNG
     createPerlinNoise(width, height) {
         const noise = [];
         for (let i = 0; i < width; i++) {
             noise[i] = [];
             for (let j = 0; j < height; j++) {
-                noise[i][j] = (Math.random());
+                // Use the seeded RNG for deterministic randomness
+                noise[i][j] = this.rng();  // Use the LCG RNG
             }
         }
         return noise;
-        
     }
 
     // Simple Smoothstep function
@@ -51,16 +78,16 @@ export class MapGenerator {
 
                 let image = null;
 
-                if(random <= - 0.8) image = Gradient[10]
-                else if(random <= - 0.6) image = Gradient[9]
-                else if(random <= - 0.4) image = Gradient[8]
-                else if(random <= - 0.2) image = Gradient[7]
-                else if(random <= 0) image = Gradient[6]
-                else if(random <= 0.2) image = Gradient[5]
-                else if(random <= 0.4) image = Gradient[4]
-                else if(random <= 0.6) image = Gradient[3]
-                else if(random <= 0.8) image = Gradient[2]
-                else image = Gradient[1]
+                if(random <= - 0.8) image = Gradient[10];
+                else if(random <= - 0.6) image = Gradient[9];
+                else if(random <= - 0.4) image = Gradient[8];
+                else if(random <= - 0.2) image = Gradient[7];
+                else if(random <= 0) image = Gradient[6];
+                else if(random <= 0.2) image = Gradient[5];
+                else if(random <= 0.4) image = Gradient[4];
+                else if(random <= 0.6) image = Gradient[3];
+                else if(random <= 0.8) image = Gradient[2];
+                else image = Gradient[1];
 
                 const spr = new Sprite({
                     objID: `block-${Blocks.Grass.id}:${x}-${y}`,
@@ -83,3 +110,4 @@ export class MapGenerator {
         this.blocks.forEach(bk => canvasScreen.registerObject(bk));
     }
 }
+

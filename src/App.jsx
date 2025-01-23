@@ -4,7 +4,7 @@ import { useCanvas } from "./hooks/useCanvas";
 import { MapGenerator } from "./handlers/MapGenerator";
 
 function App() {
-  const canvasScreen = useCanvas("canvas-screen", 300, 300, "blue");
+  const canvasScreen = useCanvas("canvas-screen", 16 * 16, 16 * 32, "blue");
 
   function handleClick(clickEvent) {
     console.log(clickEvent);
@@ -14,8 +14,8 @@ function App() {
     if (!canvasScreen) return;
     canvasScreen.enableScreenDrag(true);
     canvasScreen.handleScreenClickedEvent(handleClick);
-
-    const worldGen = new MapGenerator(16, 16, 16);
+    canvasScreen.setCameraOffset(32, 32);
+    const worldGen = new MapGenerator(5, 5, 16, "199");
     worldGen.generate();
     worldGen.loadWorld(canvasScreen);
   }, [canvasScreen]);
