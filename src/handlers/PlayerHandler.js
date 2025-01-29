@@ -1,5 +1,8 @@
 import { Sprite } from "@jaymar921/2dgraphic-utils";
-import jayIdle from "../assets/textures/sprites/Jay-idle.png";
+import jayIdleLeft from "../assets/textures/sprites/Jay-idle-left.png";
+import jayIdleRight from "../assets/textures/sprites/Jay-idle-right.png";
+import jayWalkLeft from "../assets/textures/sprites/Jay-walk-left.png";
+import jayWalkRight from "../assets/textures/sprites/Jay-walk-right.png";
 
 export default class PlayerHandler {
     constructor(canvasScreen, position = { x: 0, y: 0 }) {
@@ -9,6 +12,7 @@ export default class PlayerHandler {
 
         this.player = null;
         this.target = { x: null, y: null };
+        this.prevDirection = "left";
 
         this.loadPlayer();
         this.canvasScreen.handleScreenClickedEvent(e => this.handleScreenTapEvent(e));
@@ -21,8 +25,26 @@ export default class PlayerHandler {
             objID: "Player-1",
             posX: this.position.x,
             posY: this.position.y,
-            imageSource: jayIdle,
+            imageSource: jayIdleLeft,
             frames: 12,
+            animations: {
+                walkLeft: {
+                    frames: 6,
+                    imageSource: jayWalkLeft
+                },
+                walkRight: {
+                    frames: 6,
+                    imageSource: jayWalkRight
+                }
+                ,jayIdleLeft: {
+                    frames: 12,
+                    imageSource: jayIdleLeft
+                },
+                jayIdleRight: {
+                    frames: 12,
+                    imageSource: jayIdleRight
+                },
+            }
         });
 
         this.canvasScreen.registerObject(player);
@@ -39,9 +61,15 @@ export default class PlayerHandler {
     }
 
     updatePlayer() {
-        if (this.target.x === null || this.target.y === null) return;
-
         const player = this.player;
+        if (this.target.x === null || this.target.y === null){
+            if(this.prevDirection === "left")
+                player.switchAnimation("jayIdleLeft")
+            else
+                player.switchAnimation("jayIdleRight")
+            return;
+        }
+
         const speed = 1; // Movement speed
 
         let dx = this.target.x - (player.posX + player.width / 2);
@@ -58,6 +86,15 @@ export default class PlayerHandler {
         // Normalize movement vector
         let moveX = (dx / distance) * speed;
         let moveY = (dy / distance) * speed;
+
+        if(moveX < 0){
+            this.prevDirection = "left";
+            player.switchAnimation("walkLeft");
+        }
+        else if(moveX > 0){
+            this.prevDirection = "right";
+            player.switchAnimation("walkRight");
+        }
 
         // Move player
         player.posX += moveX;
