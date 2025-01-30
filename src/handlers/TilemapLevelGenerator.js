@@ -1,5 +1,4 @@
 import { CanvasScreen, Sprite } from "@jaymar921/2dgraphic-utils";
-import { TextureMap } from "../contants/TextureMap";
 
 export default class TilemapLevelGenerator{
     /**
@@ -14,6 +13,7 @@ export default class TilemapLevelGenerator{
     addLevel(tileMapImageSource, mapWidth, mapHeight, offset = { x: 0, y: 0}, colliders = []){
         const levelSprite = new Sprite({
             objID: `level-${this.levels.length + 1}`,
+            name:`level-${this.levels.length + 1}`,
             posX: offset.x,
             posY: offset.y,
             imageSource: tileMapImageSource
@@ -28,6 +28,7 @@ export default class TilemapLevelGenerator{
                 const posY = y * (mapHeight / colliders.length);
                 const colliderSprite = new Sprite({
                     objID: `collider-${posX}-${posY}`,
+                    name: "id-" + colliders[y][x],
                     posX,
                     posY
                 });
@@ -66,7 +67,8 @@ export default class TilemapLevelGenerator{
                 x: collider.posX,
                 y: collider.posY,
                 width: level.boxSize,
-                height: level.boxSize
+                height: level.boxSize,
+                name: collider.name
             })
         }
 
