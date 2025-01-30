@@ -1,4 +1,4 @@
-import { Sprite } from "@jaymar921/2dgraphic-utils";
+import { Sprite, SpriteType } from "@jaymar921/2dgraphic-utils";
 import jayIdleLeft from "../assets/textures/sprites/Jay-idle-left.png";
 import jayIdleRight from "../assets/textures/sprites/Jay-idle-right.png";
 import jayWalkLeft from "../assets/textures/sprites/Jay-walk-left.png";
@@ -13,6 +13,7 @@ export default class PlayerHandler {
         this.player = null;
         this.target = { x: null, y: null };
         this.prevDirection = "left";
+        this.callbacks = [];
 
         this.loadPlayer();
         this.canvasScreen.handleScreenClickedEvent(e => this.handleScreenTapEvent(e));
@@ -20,9 +21,14 @@ export default class PlayerHandler {
         setInterval(() => this.updatePlayer(), 30);
     }
 
+    addPlayerMoveEvent(callback){
+        this.callbacks.push(callback);
+    }
+
     loadPlayer() {
         const player = new Sprite({
             objID: "Player-1",
+            type: SpriteType.PLAYER,
             posX: this.position.x,
             posY: this.position.y,
             imageSource: jayIdleLeft,
@@ -98,13 +104,20 @@ export default class PlayerHandler {
 
         // Move player
         player.posX += moveX;
-        this.checkForHorizontalCollision();
+        this.checkForHorizontalCollision(["id-1"]);
         
         player.posY += moveY;
-        this.checkForVerticalCollision();
+        this.checkForVerticalCollision(["id-1"]);
+
+        // if player collide with a specific collision block id
+        const collisionId = this.checkAllDirectionCollision(["id-2", "id-3", "id-4"]);
+        for(const cbks of this.callbacks) cbks({
+            collisionId: collisionId,
+            position: { x: player.posX, y: player.posY }
+        })
     }
 
-    checkForHorizontalCollision() {
+    checkAllDirectionCollision(colliderIds = []) {
         const player = this.player;
 
         for (const collider of this.colliders) {
@@ -116,6 +129,28 @@ export default class PlayerHandler {
                 player.posY + player.height > y && // Bottom collision
                 player.posY < y + height // Top collision
             ) {
+                if(!colliderIds.includes(collider.name)) continue;
+                
+                return collider.name;
+            }
+        }
+        return null;
+    }
+
+    checkForHorizontalCollision(colliderIds = []) {
+        const player = this.player;
+
+        for (const collider of this.colliders) {
+            const { x, y, width, height } = collider;
+
+            if (
+                player.posX + player.width > x && // Right side collision
+                player.posX < x + width && // Left side collision
+                player.posY + player.height > y && // Bottom collision
+                player.posY < y + height // Top collision
+            ) {
+                if(!colliderIds.includes(collider.name)) continue;
+
                 if (player.posX + player.width / 2 < x + width / 2) {
                     // Moving right
                     player.posX = x - player.width;
@@ -127,7 +162,7 @@ export default class PlayerHandler {
         }
     }
 
-    checkForVerticalCollision() {
+    checkForVerticalCollision(colliderIds = []) {
         const player = this.player;
 
         for (const collider of this.colliders) {
@@ -139,6 +174,8 @@ export default class PlayerHandler {
                 player.posY + player.height > y && // Bottom collision
                 player.posY < y + height // Top collision
             ) {
+                if(!colliderIds.includes(collider.name)) continue;
+
                 if (player.posY + player.height / 2 < y + height / 2) {
                     // Moving down
                     player.posY = y - player.height;
