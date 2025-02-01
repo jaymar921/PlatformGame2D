@@ -10,6 +10,7 @@ import map1Image from "./assets/textures/map/map-1-tiles-v2.png";
 import TilemapLevelGenerator from "./handlers/TilemapLevelGenerator";
 import { TileMapColliders } from "./contants/TileMapColliders";
 import PlayerHandler from "./handlers/PlayerHandler";
+import PlayerHandlerV2 from "./handlers/PlayerHandlerV2";
 
 function App() {
   const canvasScreen = useCanvas(
@@ -64,7 +65,7 @@ function App() {
 
       tilemapLevelGen.loadLevel(1);
 
-      const playerHandler = new PlayerHandler(canvasScreen, {
+      const playerHandler = new PlayerHandlerV2(canvasScreen, {
         x: 8 * 32,
         y: 5 * 32,
       });
