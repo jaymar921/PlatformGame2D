@@ -7,10 +7,12 @@ import { LevelGenerator } from "./handlers/LevelGenerator";
 import { TextureMap } from "./contants/TextureMap";
 import { level1 } from "./contants/Levels";
 import map1Image from "./assets/textures/map/map-1-tiles-v2.png";
+import map2Image from "./assets/textures/map/map-2.png";
 import TilemapLevelGenerator from "./handlers/TilemapLevelGenerator";
 import { TileMapColliders } from "./contants/TileMapColliders";
 import PlayerHandler from "./handlers/PlayerHandler";
 import PlayerHandlerV2 from "./handlers/PlayerHandlerV2";
+import { convertSingleArrayMapTo2DArray } from "./utils/Utility";
 
 function App() {
   const canvasScreen = useCanvas(
@@ -55,13 +57,19 @@ function App() {
 
       const tilemapLevelGen = new TilemapLevelGenerator(canvasScreen);
 
-      tilemapLevelGen.addLevel(
-        map1Image,
-        512,
-        320,
-        { x: 0, y: 0 },
-        TileMapColliders.level1
+      const colliders = convertSingleArrayMapTo2DArray(
+        TileMapColliders.level2_singleArray,
+        {
+          row: 20,
+          column: 30,
+        },
+        1
       );
+
+      tilemapLevelGen.addLevel(map2Image, 960, 640, { x: 0, y: 0 }, colliders);
+
+      console.log(TileMapColliders.level2_singleArray);
+      console.log();
 
       tilemapLevelGen.loadLevel(1);
 
